@@ -14,8 +14,27 @@
 \end{abstract}
 
 \section{Background}
+\subsection{Linearizability}
+%% Redo sentence
+When reasoning about concurrent objects, i.e. objects that are accessed by multiple threads simultaneously, existing correctness conditions are insufficient.
+
+- consistency models in distributed systems programming
+- correctness conditions from them
+  - like Linearizability
+  - one of the more strict ones
+
+- assumes operation 'happens' at a point in time
+  - other operations ordered relative to that point
+  - if there exists an order of operations, to explain results, it is correct.
+
+- math definition
+
+\section{Related Work}
+K Linearizability
 \section{Algorithm}
-\section{Analysis}
+\section{Proofs}
+\subsection{Lock-Freedom}
+\subsection{K-Linearizability}
 \section{Results}
 
 \end{document}
