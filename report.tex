@@ -78,7 +78,7 @@ of data structures in highly concurrent environments by relaxing their
 semantic guarantees. While they have already been used extensively
 in queues and stacks, here we present a method of applying it to data-structures
 that require contiguous memory, such as a vector. We demonstrate
-its effectiveness by relaxing the \texttt{push\_back} operation to write
+its effectiveness by relaxing the \op{push\_back} operation to write
 to one of k-spots from the tail. We show how an algorithm can
 be derived using prime number theory for all threads to search the
 entire k-region in a unique order. Finally, we benchmark this
@@ -102,9 +102,9 @@ Amdhal's law states that the maximum speedup of a concurrent algorithm is bounde
 
 Fortunately, it turns out that strict linearizability isn't actually necessary for many applications. Consider for example, a web server that keeps incoming requests in a queue so that it's worker threads can service them later. In this situation, the queue is only used to avoid starvation, and thus does not actually need to be strict FIFO: even if some operations return in a different order (by a bounded amont), fariness can still be ensured. This deviation from linearizability by reordering up to some constant $k$ sequential operations is called k-linearizability.
 
-K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning most data structures to thier k-linearizable equivalents has been quite straightforward for these data structures: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This has the drawback that it cannot be used for a data structure that requires it's elements to be in a contiguous block of memory, such as a vector.
+K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning these data structures to thier k-linearizable equivalents has been straightforward: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This approach has a drawback that it cannot be used for data structures whose semantics dictate that its elements be located in a contiguous block of memory, such as a vector.
 
-Here we present a vector that is lock-free vector with a very scalable high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly k-elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector, for performance reasons.
+Here we present a concurrent vector that is lock-free with a scalable, high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly $k$ elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector for performance reasons, as explained in section \autocite{sec:popback}.
 
 
 This paper presents the following contributions:
