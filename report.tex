@@ -1,40 +1,448 @@
-\documentclass[a4paper,10pt]{article}
-\usepackage[utf8]{inputenc}
+%-----------------------------------------------------------------------------
+%
+%               Template for sigplanconf LaTeX Class
+%
+% Name:         sigplanconf-template.tex
+%
+% Purpose:      A template for sigplanconf.cls, which is a LaTeX 2e class
+%               file for SIGPLAN conference proceedings.
+%
+% Guide:        Refer to "Author's Guide to the ACM SIGPLAN Class,"
+%               sigplanconf-guide.pdf
+%
+% Author:       Paul C. Anagnostopoulos
+%               Windfall Software
+%               978 371-2316
+%               paul@windfall.com
+%
+% Created:      15 February 2005
+%
+%-----------------------------------------------------------------------------
 
-%opening
-\title{K-Linearizability in Contiguous Memory}
-\author{Lasath Fernando}
+
+\documentclass{sigplanconf}
+
+% The following \documentclass options may be useful:
+
+% preprint      Remove this option only once the paper is in final form.
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% authoryear    To obtain author/year citation style instead of numeric.
+
+\usepackage{amsmath}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{hyperref}
 
 \begin{document}
 
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+\copyrightyear{20yy}
+\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+\doi{nnnnnnn.nnnnnnn}
+
+% Uncomment one of the following two, if you are not going for the
+% traditional copyright transfer agreement.
+
+%\exclusivelicense                % ACM gets exclusive license to publish,
+                                  % you retain copyright
+
+%\permissiontopublish             % ACM gets nonexclusive license to publish
+                                  % (paid open-access papers,
+                                  % short abstracts)
+
+\titlebanner{banner above paper title}        % These are ignored unless
+\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{K-linearizability in Contiguous Memory Data-Structures}
+% \subtitle{Subtitle Text, if any}
+
+\authorinfo{Lasath Fernando}
+           {University of New South Wales}
+           {lyfe227@cse.unsw.edu.au}
+% \authorinfo{Name2\and Name3}
+%            {Affiliation2/3}
+%            {Email2/3}
+
 \maketitle
 
-\begin{abstract}
+\newcommand{\op}{\textbf}
 
+\begin{abstract}
+% % K-linearizability has proven to be a highly effective way to increase the performance
+of data structures in highly concurrent environments by relaxing their
+semantic guarantees. While they have already been used extensively
+in queues and stacks, here we present a method of applying it to data-structures
+that require contiguous memory, such as a vector. We demonstrate
+its effectiveness by relaxing the push\_back() operation to write
+to one of k-spots from the tail. We show how an algorithm can
+be derived using prime number theory for all threads to search the
+entire k-region in a unique order. Finally, we benchmark this
+(feature-equivalent) vector against the vector from intel\textbf{'}s
+industry leading thread building blocks library and show it is faster
+by a factor of X.
 \end{abstract}
 
+\category{CR-number}{subcategory}{third-level}
+
+% general terms are not compulsory anymore,
+% you may leave them out
+\terms
+term1, term2
+
+\keywords
+keyword1, keyword2
+
+\section{Introduction}
+
+Amdhal's law states that the maximum speedup of a concurrent algorithm is bounded by the portion of it that cannot be parallelized. Thus, intuitively, it follows that increasing parallelism is crucial to achieving maximum performance as the number of cores available on a computer increases. Increasing parallelism on shared data structures while maintaining correctness (linearizability) has thus far proven to be a highly non-trivial task.
+
+Fortunately, it turns out that strict linearizability isn't actually necessary for many applications. Consider for example, a web server that keeps incoming requests in a queue so that it's worker threads can service them later. In this situation, the queue is only used to avoid starvation, and thus does not actually need to be strict FIFO: even if some operations return in a different order (by a bounded amont), fariness can still be ensured. This deviation from linearizability by reordering up to some constant $k$ sequential operations is called k-linearizability.
+
+K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning most data structures to thier k-linearizable equivalents has been quite straightforward for these data structures: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This has the drawback that it cannot be used for a data structure that requires it's elements to be in a contiguous block of memory, such as a vector.
+
+Here we present a vector that is lock-free vector with a very scalable high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly k-elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector, for performance reasons.
+
+
+This paper presents the following contributions:
+\begin{enumerate}
+\item A method of increasing parallelism significantly in a vector push-back
+operation, and thus delivering much more performance in multi-core
+machines.
+\item The first algorithm that can achieve k-linearizability while storing
+its elements in contiguous memory.
+\item A new algorithm for reducing contention by distributing the load effectively
+between adjacent elements of a vector.
+\end{enumerate}
+
 \section{Background}
+
+
+\subsection{Progress Guarantees}
+
+
 \subsection{Linearizability}
-%% Redo sentence
-When reasoning about concurrent objects, i.e. objects that are accessed by multiple threads simultaneously, existing correctness conditions are insufficient.
 
-- consistency models in distributed systems programming
-- correctness conditions from them
-  - like Linearizability
-  - one of the more strict ones
-
-- assumes operation 'happens' at a point in time
-  - other operations ordered relative to that point
-  - if there exists an order of operations, to explain results, it is correct.
-
-- math definition
+\subsection{Synchronisation Primitives}
+CAS$_1$ (compare-and-swap)
+Atomic read/write
 
 \section{Related Work}
-K Linearizability
-\section{Algorithm}
-\section{Proofs}
-\subsection{Lock-Freedom}
-\subsection{K-Linearizability}
-\section{Results}
+
+K-linearizability, or quasi linearizability is a correctness condition
+that reduces the synchronization required for concurrent data structures
+by relaxing the ordering. An execution is said to be k-linearizable
+if it can be made equivalent to a linearizable execution by reordering
+$k-1$ operations, for $k>0$ {[}1{]}.
+
+There are many existing implementations k-linearizable stacks and
+queues that provide drastic performance improvements over their fully
+linearizable counterparts{[}1{]}{[}2{]}. Since neither of these data
+structures impose restrictions on the layout of memory, they can simply
+use k instances of their original data structures with a load balancer
+to distribute operations. However, doing it in something such as a
+vector --which has the requirement that all elements must be laid
+out contiguously in memory-- is more challenging.
+
+Bjorne Strstroups's implementation of a lock free vector is used as
+base for most of the vector operations provided by our vector, including
+memory management and random access. Unlike it however, ours will
+not support the pop\_back operation, as some algorithms rely on the
+vector never shrinking.
+
+
+\section{Algorithms}
+
+\subsection{Layout}
+A traditional vector consists of a single block of dynamically allocated memory, containing all elements in memory, where an index is an offset from the start of the block. This grows with each insertion, until all indices are filled. Once the block is completely filled, a new block is allocated (usually of twice the size) and all existing elements are copied to the new one. Since all values are stored continuously in a single block of memory, this usually provides good cache locality and random access is very efficient, as it requires a single add and dereference. The drawback of this approach is that the growth operation is very expensive, and could cause a significant performance impact if done too frequently.
+
+This model however, is insufficient for highly concurrent vectors, as parallelising this growth operation is a highly non trivial task. We avoid this problem by instead using a 2 level array, like [Dechev et al '05] and [TBB concurrent vector]. As such, our vector consists of a block of pointers, each pointing to blocks of doubling size, containing the values. This allows us to grow the vector by allocating and adding new blocks in a lock free manner, while keeping most of the advantages of contiguous storage, like efficient random access, good cache locality.
+
+However, it has some limitations \citep{dechev06}.
+% limitation - requires two lookups (and some bit shifts) per random access
+% requires memory overhead of bucket-array
+% advantage - growing vector much easier (shown in code reserve(), line blah).
+% advantage outweighs the costs
+
+\subsection{K-region}
+The \ref{alg:advancetail}
+- range of indices
+- continuously moving
+  - via \op{advance\_tail}, either manually or as part of push back
+- k region is the valid area for a push-back operation to insert to
+- it sits at the end
+- sparsely populated
+- spans several buckets
+
+\subsubsection{Updating the tail}
+% NOTE: at the point of linearization, the thread-local tail is at most k spots away from the global tail
+
+The tail marks the start of the k-region, and the point before which
+all data is packed (without sentinel values). Since all search sequences
+start from the current tail, the closer it is to the actual end of
+data, the faster a valid sentinel value would be found. However, since
+determining the new tail requires a linear search from the previous
+tail to the first sentinel value, it should be used sparingly.
+
+We found it sufficient for each thread to attempt to do so once every
+$k$ operations, when the sequence repeats itself (i.e. offset becomes
+0 again).
+
+\subsection{Memory Management}
+* need thread safe memory allocator
+* used tab::cache\_aligned\_allocator
+
+\subsection{Distinguishing Filled and Empty Indices}
+
+In a vector, an index is filled if it contains a value and empty otherwise. That is, if a read operation with that index will succeed, then it is filled. In a traditional vector, the tail index marks the last filled index. Thus, if a given index was filled or empty could be determined simply by comparing it with the tail index.
+
+However, the k-region is a sparsely populated data structure, with no tail index. Thus, it is impossible to determine if a given index is filled or empty using said index alone. The solution, is to use the value for the index, rather than the index itself. If the value is equal to a pre-designated sentinel value, then that index is empty. If not, it is filled.
+
+The exact value of the sentinel should be determined by the user, to ensure it is outside the domain of valid inputs. Since our implementation is implicitly shared and stores references to values, a NULL value seemed a suitable candidate.
+% maybe give some examples of good sentinels
+% easy to choose for pointer types - NULL
+% no global solution for other cases, thus must be chosen case by case
+
+\subsection{Bounds Checking}
+
+\subsection{push\_back Operation}
+
+This is the operation that benefits the most from the relaxed semantics of k-linearizability, and diverges the most from a traditional vector. Several unique issues had to be addressed relating to it.
+
+\subsubsection{Searching for a free space}
+
+% NOTE: This should probably get it's own section, if I end up benchmarking the effectiveness of the various searching (load-balancing) algorithms.
+
+Since the semantics of the operation specify an entire range of locations
+for the given data to be inserted to, each invocation must determine an absolute index to insert into.
+
+The naive approach to this would be an algorithm that searches linearly
+from the start of the k-region (tail) till the first sentinel value
+it hits. While this would certainly work, it wouldn't leverage the
+relaxed semantics and would still cause significant contention as
+all concurrent push operations would try to write to the same location.
+
+A better approach might be use a pseudo random algorithm with a fairly
+even distribution to provide the offsets from the tail. Depending
+on the algorithm and seed used, this may perform very well in certain
+conditions, however it would be difficult to verify. It would be much
+easier if we could guarantee that each thread would search the k-region
+in a unique order.
+
+To create a search pattern for each thread, we derived an algorithm
+using prime number theory. Each thread $t$ is pre-assigned a unique
+prime number $P_{t}$. It starts its search cycle at the tail, and
+increments by $P_{t}$ until it finds a sentinel value indicating
+an empty spot. i.e.
+$$o_{i}=(o_{i-1}+P_{t})\bmod{k}$$
+where $o_{i}$ is offset from the tail for the $i$th location to
+search. Since any two prime numbers are relative primes, it can be
+shown that this will always generate a unique sequence of locations
+to search.
+
+\subsection{Random Access}
+
+One of the primary advantages of storing elements contiguously in memory is the ability to perform random access operations efficiently. In this case, we define \emph{efficiently} to be $O(1)$, conforming to the ISO C++ standard[cite-stl-ref-here], and \emph{random access operations} to be \op{read} and \op{write} specifically.
+
+\subsubsection{Semantics}
+However, since we're building a k-linearizabile data structure, the semantics provided in the STL reference for a vector are insufficient. Previous exploration of k-linearizability was mostly for k-FIFO and k-LIFO data structures which did not support random access operations; As such, a new set of semantics are required. The challenge is to define a set of semantics that are suitable in a k-linearizabile context, yet are still useful to the programmer.
+
+There are two cases to consider: \op{read} and \op{write} operations for elements outside the k-region, and those within. For those outside, the data structure is strictly linearizabile, and conforms to the ISO C++ vector specification. For operations within, since an index by itself can be somewhat ambiguous in
+a sparsely packed data structure, several disambiguation approaches were evaluated.
+
+The first, and easiest approach would be to not support random access
+reads or writes into the k-region at all. The only way to access the
+last k-elements would be to finish all insertions, and perform a \op{repack}
+operation which would reorder the elements in the k-region so they
+are contiguous and move the tail. This effectively advances the k-region such that those elements are no longer in it, allowing them to be accessed via non k-region random access operations.
+
+While this would certainly be the easiest, it would be a detriment
+to performance as it cannot be easily parallelized. It would also
+prohibit iterating through the vector while push\_back operations
+are occurring. The second approach was to leave the repack operation,
+but also allow iterating through the kvector. This could be achieved
+by implementing an iterator that simply skipped over any sentinel
+values it encountered.
+
+This would have the observable effect of elements moving relative to each other over multiple iterations. The result of this is that the same index can refer to different elements during different operations which modify the k-region. To overcome this limitation, a write operation could take an additional parameter: expected value. The operation would now resemble a \op{compare-and-swap} primitive, allowing programmers to ensure their index refers to the correct value when updating it.
+
+The final approach is to treat the k-region similar to a traditional vector. By either making it valid for a \op{read} to return a sentinel value, or making a \op{read} fail if a sentinel is encountered. The former is equivalent to artificially injecting values into the vector, while the latter can cause a read to fail despite appearing to be within the bounds of the vector. We opted for the latter, as it seemed to provide the best compromise between the advantages and limitations of other approaches.
+
+\subsubsection{Implementation}
+
+With the two level layout of data in memory that we opted for, the bucket number $b$ that an element $e$ lies in can be shown from the formula:
+  $$ b = \log_2\left(\frac{e}{k}+1\right)-1 $$
+
+The index $i$ of the element $e$ within said bucket $b$ can be shown by the formula:
+  $$ i = e - 2^{b}k - k $$
+
+Since the stored data elements can only be as large as a word, both read and write operations can be made atomic simply by using the appropriate hardware primitives.
+
+\subsection{Pseudocode}
+
+\newcommand{\as}{$\leftarrow$ }
+\newcommand{\eq}{$=$ }
+
+\begin{algorithm}
+\caption{push\_back $thread, vector, element$}
+\begin{algorithmic}
+\STATE tail \as vector.tail
+\REPEAT
+  \STATE offset \as thread.previous\_offset
+  \WHILE{at(tail + offset) \eq sentinel\_value}
+    \STATE offset \as (offset + thread.prime) $\bmod{K}$
+    \STATE thread.previous\_offset = offset
+    \IF{offset \eq 0}
+      \STATE advance\_tail()
+    \ENDIF
+  \ENDWHILE
+
+  reserve(tail + offset)
+\UNTIL CAS(at(tail + offset), sentinel\_value, element)
+\end{algorithmic}
+\label{alg:pushback}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{advance\_tail $vector$}
+\begin{algorithmic}
+\STATE old\_tail \as vector.tail
+\STATE new\_tail \as old\_tail
+\WHILE{at(new\_tail) $\neq$ sentinel\_value}
+  \STATE new\_tail++
+\ENDWHILE
+\STATE CAS(vector.tail, old\_tail, new\_tail)
+\end{algorithmic}
+\label{alg:advancetail}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{reserve $vector, min_size$}
+\begin{algorithmic}
+\IF{vector.data[bucket\_for(min\_size)] $\neq$ NULL}
+  \STATE tentative\_bucket \as alloc(bucket\_size\_for(min\_size))
+  \IF{\NOT CAS(\&vector.data[bucket\_for(min\_size)], NULL, tentative\_bucket)}
+    \STATE free(tentative\_bucket)
+  \ENDIF
+\ENDIF
+\end{algorithmic}
+\label{alg:reserve}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{read $vector, index$}
+\begin{algorithmic}
+\STATE value \as at(index)
+\RETURN \{value \eq sentinel\_value, value\}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{write $vector, index, data$}
+\begin{algorithmic}
+\STATE at(index) \as data
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+\section{Correctness and Progress Guarantees}
+\subsection{Lock Freedom}
+A data structure is lock-free if and only if some operation completes
+after a finite number of steps system-wide have been executed on the
+structure [Fraiser'02]. Thus it suffices to show that an operation
+always completes, or the fact it doesn't implies that another operation does.
+
+Read and write operations have two cases to consider: within the k-region,
+and outside. Both reads and writes for elements outside the k-region are
+atomic, and thus trivially wait free. In the other case, they perform a static and finite amount of reads (and a CAS operation), and so is guaranteed to terminate.
+
+The remaining operations to consider are \emph{push\_back}, \emph{advance\_tail} and \emph{reserve}.
+The \emph{advance\_tail} operation will either complete after reading a finite number of non-sentinel values, or it will live-lock because it indefinitely reads non-sentinel values, which can only occur if other operations are successfully inserting non-sentinel values. For the \emph{reserve} operation, the only interaction with global state is through a single CAS operation, whose failure indicates that another inovcation has already linearized.
+
+The \emph{push\_back} can only be live-locked when it there are no sentinel values in the k-region, or non-sentinel values are continuously being inserted as it searches. In the latter situation, other threads are completing their operations, and in the former, the k-region will be updated within at most $k$ attempts.
+
+\subsection{K-linearizability}
+
+\subsubsection{K-Sequential Specification}
+
+- what is sequential specification
+\
+H is a hitory of Object
+\
+S is a legal histroy of Object, D is the distance
+$$ KSS = \left\{ H \middle\vert \exists S : D\left(H, S\right) \le k \right\} $$
+
+For our purposes, k-linearizability means that push\_back operation
+
+In order for \emph{push\_back} to be k-linearizabile, it is sufficient to show that all elements are inserted at most k indicies away from an equivalent linearizabile push\_back at it's linearization point.
+
+The reset of the operations are strictly linearizabile, and as such $<$INSERT NORMAL PROOF HERE$>$.
+
+%% While somewhat sketchy, this lays out our original logic, with some placeholders
+After n pushes, $r(i) = \emptyset$. After $n+m$ pushes, $r(i) = x_j, j \in [n, n+m-1]$. After rearranging, $x_j$ is the $i$'th thing added, and before $x_j$ is added, $r(i)=\emptyset$ and after $x_j$ is added $r(i)=x_j$.
+
+%% more concrete reasoning
+Consider index $i$. After reading $i-k+1$ element, $r(i) = \emptyset$. After performing $i + k$ \op{push\_back} operations, $r(i) \ne \emptyset$, and so $r(i)$ is one of the $2k-1$ elements added. Say that $r(i)=x_j$.
+
+In the sequential history, reorder $x_j$ so that it is the $i$th element added. Since $x_j$ is the between the $i-k+1$ and $i+k$ elements, we must move $x_j$ at most $2k-1$ positions. After re-arrangement, $r(i) = \emptyset$ before $p(x_j)$ , and $r(i) = x_j$ after and so it is a valid sequential vector history. This implies $VDist \le 2k-1$.
+
+%% To find the highest index that's guaranteed to be empty after n pushes
+Use one element to end the k-region. Then we have a gap of $k-1$ elements. And then we use the remaining $n-1$ elements, which fill indicies $[0, n-1)$. Then we have $k-1$ gaps, so we `fill in` indicies $[0, n+k-2)$ and so once we include the last element, that is $[0, n-1+(k-1)+1)$. So the index of the first guaranteed empty has index $n+k-2$.
+
+%% To find the last element we can guarantee is full
+When adding n elements,
+use $k-1$ elements to 'fill' the k-region.
+The we have a gap of $1$.
+So we have $n-k+1$ elements left.
+So those fill indicies $[0, n-k+1)$.
+Therefore, $n-k$ is the last index guaranteed to contain a value.
+
+Then work backwards. Once you have a constraint on what you want full/empty and solve for the values.
+
+\section{Experimental Evaluation}
+
+\section{Exploration of k-linearizabile designs with contiguous memory}
+\subsection{Bounded buffer using this}
+
+\section{Conclusion and Further Pursuit}
+
+\appendix
+\section{Appendix Title}
+
+This is the text of the appendix, if you need one.
+
+\acks
+
+Acknowledgments, if needed.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+\bibliography{refs/refs.bib}
+
+% % The bibliography should be embedded for final submission.
+%
+% \begin{thebibliography}{}
+% \softraggedright
+%
+% \bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
+% P. Q. Smith, and X. Y. Jones. ...reference text...
+%
+% \end{thebibliography}
+
 
 \end{document}
+
+%                       Revision History
+%                       -------- -------
+%  Date         Person  Ver.    Change
+%  ----         ------  ----    ------
+
+%  2013.06.29   TU      0.1--4  comments on permission/copyright notices
+
