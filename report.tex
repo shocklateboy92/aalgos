@@ -104,7 +104,7 @@ Fortunately, it turns out that strict linearizability isn't actually necessary f
 
 K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning these data structures to thier k-linearizable equivalents has been straightforward: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This approach has a drawback that it cannot be used for data structures whose semantics dictate that its elements be located in a contiguous block of memory, such as a vector.
 
-Here we present a concurrent vector that is lock-free with a scalable, high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly $k$ elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector for performance reasons, as explained in section \autocite{sec:popback}.
+Here we present a concurrent vector that is lock-free with a scalable, high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly $k$ elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector for performance reasons, as explained in section \autoref{sec:popback}.
 
 
 This paper presents the following contributions:
@@ -125,6 +125,23 @@ between adjacent elements of a vector.
 
 
 \subsection{Linearizability}
+When dealing with concurrent or distributed programming, a correctness model including some temporal reasoning, or consistency.
+
+There are several consistency models used in distributed systems to reason about correctness of shared data access. These include, in order of strictness; Eventual Consistency \cite{cm-eventual}, Release Consistency \cite{cm-release}, Causal Consistency \cite{cm-causal}, Sequential consistency \cite{cm-sequential} and Linearizability.
+
+While the others would be unintuitive, and difficult to reason about in a concurrent
+
+- consistency models in distributed systems programming
+- correctness conditions from them
+  - like Linearizability
+  - one of the more strict ones
+
+- assumes operation 'happens' at a point in time
+  - other operations ordered relative to that point
+  - if there exists an order of operations, to explain results, it is correct.
+
+- math definition
+
 
 \subsection{Synchronisation Primitives}
 CAS$_1$ (compare-and-swap)
