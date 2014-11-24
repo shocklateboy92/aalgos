@@ -73,18 +73,17 @@
 \newcommand{\op}{\textbf}
 
 \begin{abstract}
-% % K-linearizability has proven to be a highly effective way to increase the performance
+K-linearizability has proven to be an effective way to increase the performance
 of data structures in highly concurrent environments by relaxing their
 semantic guarantees. While they have already been used extensively
 in queues and stacks, here we present a method of applying it to data-structures
 that require contiguous memory, such as a vector. We demonstrate
-its effectiveness by relaxing the push\_back() operation to write
+its effectiveness by relaxing the \texttt{push\_back} operation to write
 to one of k-spots from the tail. We show how an algorithm can
 be derived using prime number theory for all threads to search the
 entire k-region in a unique order. Finally, we benchmark this
-(feature-equivalent) vector against the vector from intel\textbf{'}s
-industry leading thread building blocks library and show it is faster
-by a factor of X.
+(feature-equivalent) vector against the vector from intel's
+industry leading thread building blocks library and show it is significantly more scalable.
 \end{abstract}
 
 \category{CR-number}{subcategory}{third-level}
