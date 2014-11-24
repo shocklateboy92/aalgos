@@ -161,7 +161,7 @@ A traditional vector consists of a single block of dynamically allocated memory,
 
 This model however, is insufficient for highly concurrent vectors, as parallelising this growth operation is a highly non trivial task. We avoid this problem by instead using a 2 level array, like [Dechev et al '05] and [TBB concurrent vector]. As such, our vector consists of a block of pointers, each pointing to blocks of doubling size, containing the values. This allows us to grow the vector by allocating and adding new blocks in a lock free manner, while keeping most of the advantages of contiguous storage, like efficient random access, good cache locality.
 
-However, it has some limitations \citep{dechev06}.
+However, it has some limitations \cite{dechev06}.
 % limitation - requires two lookups (and some bit shifts) per random access
 % requires memory overhead of bucket-array
 % advantage - growing vector much easier (shown in code reserve(), line blah).
@@ -423,7 +423,7 @@ Acknowledgments, if needed.
 % We recommend abbrvnat bibliography style.
 
 \bibliographystyle{abbrvnat}
-\bibliography{refs/refs.bib}
+\bibliography{report.bib}
 
 % % The bibliography should be embedded for final submission.
 %
