@@ -130,7 +130,9 @@ There are several consistency models used in distributed systems to reason about
 
 While the rest are unintuitive and difficult to use in concurrent programming, linearizability has been successfully used as a correctness condition \cite{classic-linearizability}. Intuitively, a linearizabile operation is considered to 'happen' at a single point in time (called its linearization point) between its start and end, after which all operations that interact with it will behave as though it has concluded. For example, a linearization point could be successfully acquiring a lock.
 
-More formally an operation is said to be linearizabile if for every concurrent history $H$, there exists an equivalent sequential history $S$.
+More formally an operation is said to be linearizabile if for every concurrent history $H$, there exists an equivalent sequential history $S$, where $S$ respects the semantics of the operation. For example, it would be invalid for the following sequence of operations to occur in a stack
+$$push(A)\ push(B)\ pop(A)$$
+as a stack must follow \emph{last-in-first-out}.
 A concurrent history is an ordered set of operation invocations (start) and responses (end) performed by each thread. A sequential history is a history where each operation invocation (except possibly the last) is directly followed by its response.
 $H$ and $S$ are equivalent if for each thread $t$ in $H$ and $S$, $H \vert t = S \vert t$ where $A\vert t$ is the sub-history of events in history $A$ for some thread $t$.
 
