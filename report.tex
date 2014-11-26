@@ -308,6 +308,7 @@ Since the stored data elements can only be as large as a word, both read and wri
     \STATE thread.previous\_offset = offset
     \IF{offset \eq 0}
       \STATE advance\_tail()
+      \STATE tail \as vector.tail
     \ENDIF
   \ENDWHILE
 
