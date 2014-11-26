@@ -389,12 +389,15 @@ We present a sketch of a proof that the \op{push\_back} operation is $k$-lineari
 
 In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy the appropriate semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
 
-Important facts:
+We proceed as follows:
 
+1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. 
 
-1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. Sketch proof: the value of \op{vector.tail} is only modified by \op{advance\_tail}, which does not decrease it. Therefore, the value of tail on the last line of algorithm 2 will be no more than $t$. In addition, the offset used in the CAS operation in \op{push\_back} is between 0 and $k$. This means that if the CAS succeeds and the algorithm terminates, it will insert at an index below $t + k$, which gives the upper bound. To get the lower bound, we know from \op{advance\_tail} that all indices below $t$ have a value other than \op{sentinel\_value}, and so if the CAS succeeds, it inserts above $t$. Thus we have the above bounds.
+\textit{Sketch proof:} the value of \op{vector.tail} is only modified by \op{advance\_tail}, which does not decrease it. Therefore, the value of \op{vector.tail} on the last line of algorithm 1 will be no more than $t$. In addition, the offset used in the CAS operation in \op{push\_back} is between 0 and $k$. This means that if the CAS succeeds and the algorithm terminates, it will insert at an index below $t + k$, which gives the upper bound. To get the lower bound, we know from \op{advance\_tail} that all indices below $t$ have a value other than \op{sentinel\_value}, and so if the CAS succeeds, it inserts above $t$. Thus we have the required bounds.
 
-2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. Sketch proof: 
+2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. 
+
+\textit{Sketch proof:} Let \op{vector.tail} equal $t$. Clearly, since $t$ counts the number of consecutive non-sentinel values from the start of the vector, then after the $p$th insertion linearizes, it cannot be above $p$, which gives the upper bound. For the lower bound, consider that from (1) above we have that the $p$th insertion inserts into an index between $t$ and $t + k$. Since $t$ is non-decreasing, so is this insertion-index-range. This implies that the first $t + k$ indices contain all $p$ inserted elements. By the pidgeon-hole principle, we have that $t + k \ge p$; some simple algebra gives the required bound. 
 
 From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$ for all $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history for $p$ to match $i$, and so our implementation is $k$-linearizable.
 
