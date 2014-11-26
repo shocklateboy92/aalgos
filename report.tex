@@ -125,22 +125,14 @@ between adjacent elements of a vector.
 
 
 \subsection{Linearizability}
-When dealing with concurrent or distributed programming, a correctness model including some temporal reasoning, or consistency.
 
-There are several consistency models used in distributed systems to reason about correctness of shared data access. These include, in order of strictness; Eventual Consistency \cite{cm-eventual}, Release Consistency \cite{cm-release}, Causal Consistency \cite{cm-causal}, Sequential consistency \cite{cm-sequential} and Linearizability.
+There are several consistency models used in distributed systems to reason about correctness of shared data access. These include, in order of strictness: eventual consistency \cite{cm-eventual}, release consistency \cite{cm-release}, causal consistency \cite{cm-causal}, sequential consistency \cite{cm-sequential}, and linearizability.
 
-While the others would be unintuitive, and difficult to reason about in a concurrent
+While the rest are unintuitive and difficult to use in concurrent programming, linearizability has been successfully used as a correctness condition \cite{classic-linearizability}. Intuitively, a linearizabile operation is considered to 'happen' at a single point in time (called its linearization point) between its start and end, after which all operations that interact with it will behave as though it has concluded. For example, a linearization point could be successfully acquiring a lock.
 
-- consistency models in distributed systems programming
-- correctness conditions from them
-  - like Linearizability
-  - one of the more strict ones
-
-- assumes operation 'happens' at a point in time
-  - other operations ordered relative to that point
-  - if there exists an order of operations, to explain results, it is correct.
-
-- math definition
+More formally an operation is said to be linearizabile if for every concurrent history $H$, there exists an equivalent sequential history $S$.
+A concurrent history is an ordered set of operation invocations (start) and responses (end) performed by each thread. A sequential history is a history where each operation invocation (except possibly the last) is directly followed by its response.
+$H$ and $S$ are equivalent if for each thread $t$ in $H$ and $S$, $H \vert t = S \vert t$ where $A\vert t$ is the sub-history of events in history $A$ for some thread $t$.
 
 
 \subsection{Synchronisation Primitives}
