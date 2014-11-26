@@ -147,16 +147,16 @@ K-linearizability, or quasi linearizability is a correctness condition
 that reduces the synchronization required for concurrent data structures
 by relaxing the ordering. An execution is said to be k-linearizable
 if it can be made equivalent to a linearizable execution by reordering
-$k-1$ operations, for $k>0$ {[}1{]}.
+$k-1$ operations, for $k>0$ \cite{opodis10,zhang13}.
 
-There are many existing implementations k-linearizable stacks and
-queues that provide drastic performance improvements over their fully
-linearizable counterparts{[}1{]}{[}2{]}. Since neither of these data
-structures impose restrictions on the layout of memory, they can simply
-use k instances of their original data structures with a load balancer
-to distribute operations. However, doing it in something such as a
-vector --which has the requirement that all elements must be laid
-out contiguously in memory-- is more challenging.
+There are currently many linearizable implementations of various \emph{last-in-first-out} (stacks) and \emph{first-in-first-out} (queues) data structures. Since the operational semantics of these data structures provide no constraints on the locality or layout of their data in memory, the following approach can be used:
+\begin{itemize}
+ \item take an existing linearizable implementation
+ \item create $k$ instances
+ \item use a load balancer to distribute operations between instances
+\end{itemize}
+
+This is effectively a simplified version of the approach taken by Kirsch et al. for their k-FIFO queue \cite{kfifo1}. Achieving k-linearizability in data-structures that impose restrictions on memory layout -- such as a vector, for example -- require modifying operations on it, as we will see in section \ref{sec:implementation}.
 
 Bjorne Strstroups's implementation of a lock free vector is used as
 base for most of the vector operations provided by our vector, including
@@ -166,6 +166,7 @@ vector never shrinking.
 
 
 \section{Algorithms}
+\label{sec:implementation}
 
 \subsection{Layout}
 A traditional vector consists of a single block of dynamically allocated memory, containing all elements in memory, where an index is an offset from the start of the block. This grows with each insertion, until all indices are filled. Once the block is completely filled, a new block is allocated (usually of twice the size) and all existing elements are copied to the new one. Since all values are stored continuously in a single block of memory, this usually provides good cache locality and random access is very efficient, as it requires a single add and dereference. The drawback of this approach is that the growth operation is very expensive, and could cause a significant performance impact if done too frequently.
