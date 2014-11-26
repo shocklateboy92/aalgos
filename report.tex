@@ -392,10 +392,9 @@ In order for our linearization to be $k$-linearizable with respect to \op{push\_
 Important facts:
 
 
-1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. Sketch proof: the CAS operation that performs the linearized insert in \op{push\_back} uses $t$ plus an offset, however the offset is between 0 and $k$ 
+1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. Sketch proof: the value of \op{vector.tail} is only modified by \op{advance\_tail}, which does not decrease it. Therefore, the value of tail on the last line of algorithm 2 will be no more than $t$. In addition, the offset used in the CAS operation in \op{push\_back} is between 0 and $k$. This means that if the CAS succeeds and the algorithm terminates, it will insert at an index below $t + k$, which gives the upper bound. To get the lower bound, we know from \op{advance\_tail} that all indices below $t$ have a value other than \op{sentinel\_value}, and so if the CAS succeeds, it inserts above $t$. Thus we have the above bounds.
 
-2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. Sketch proof: the value of \op{vector.tail} is changed only by calls to \op{advance\_tail}, which increases it to the index of the first sentinel value. Since elements are only added within 
-
+2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. Sketch proof: 
 
 From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$ for all $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history for $p$ to match $i$, and so our implementation is $k$-linearizable.
 
