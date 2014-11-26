@@ -394,7 +394,7 @@ Important facts:
 
 2) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$.
 
-From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history.
+From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$ for all $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history for $p$ to match $i$, and so our implementation is $k$-linearizable.
 
 \subsubsection{K-Sequential Specification}
 
