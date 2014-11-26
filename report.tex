@@ -380,15 +380,17 @@ The \emph{push\_back} can only be live-locked when it there are no sentinel valu
 
 \subsection{K-linearizability}
 
-We present a proof that the \op{push\_back} operation is $k$-linearizable. Following \citet{dechev06}, we use linearization points to reason about the translation of a concurrent history to a sequential one.
+We present a sketch of a proof that the \op{push\_back} operation is $k$-linearizable. Following \citet{dechev06}, we use linearization points to reason about the translation of a concurrent history to a sequential one. The intuition behind doing so is that for each invocation-response event pair, there is a point in-between the two where the action of the operation is atomically visible (usually near a call to a CAS operation). By choosing such a point between the two events, we can convert any argument about the linearization of a concurrent history into an argument about whether a semantically valid sequence of serialization points can be constructed from the given concurrent history.
 
-In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy vector semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
+In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy the appropriate semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
 
 Important facts:
 
-1) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$.
 
-2) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$.
+1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. Sketch proof: the CAS operation that performs the linearized insert in \op{push\_back} uses $t$ plus an offset, however the offset is between 0 and $k$ 
+
+2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. Sketch proof: the value of \op{vector.tail} is changed only by calls to \op{advance\_tail}, which increases it to the index of the first sentinel value. Since elements are only added within 
+
 
 From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$ for all $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history for $p$ to match $i$, and so our implementation is $k$-linearizable.
 
