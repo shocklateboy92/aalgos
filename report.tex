@@ -128,9 +128,9 @@ between adjacent elements of a vector.
 
 There are several consistency models used in distributed systems to reason about correctness of shared data access. These include, in order of strictness: eventual consistency \cite{cm-eventual}, release consistency \cite{cm-release}, causal consistency \cite{cm-causal}, sequential consistency \cite{cm-sequential}, and linearizability.
 
-While the rest are unintuitive and difficult to use in concurrent programming, linearizability has been successfully used as a correctness condition \cite{classic-linearizability}. Intuitively, a linearizabile operation is considered to 'happen' at a single point in time (called its linearization point) between its start and end, after which all operations that interact with it will behave as though it has concluded. For example, a linearization point could be successfully acquiring a lock.
+While the rest are unintuitive and difficult to use in concurrent programming, linearizability has been successfully used as a correctness condition \cite{classic-linearizability}. Intuitively, a linearizable operation is considered to 'happen' at a single point in time (called its linearization point) between its start and end, after which all operations that interact with it will behave as though it has concluded. For example, a linearization point could be successfully acquiring a lock.
 
-More formally an operation is said to be linearizabile if for every concurrent history $H$, there exists an equivalent sequential history $S$, where $S$ respects the semantics of the operation. For example, it would be invalid for the following sequence of operations to occur in a stack
+More formally an operation is said to be linearizable if for every concurrent history $H$, there exists an equivalent sequential history $S$, where $S$ respects the semantics of the operation. For example, it would be invalid for the following sequence of operations to occur in a stack
 $$push(A)\ push(B)\ pop(A)$$
 as a stack must follow \emph{last-in-first-out}.
 A concurrent history is an ordered set of operation invocations (start) and responses (end) performed by each thread. A sequential history is a history where each operation invocation (except possibly the last) is directly followed by its response.
@@ -143,6 +143,7 @@ Atomic read/write
 
 \section{Related Work}
 
+\subsection{Quasi-Linearizability}
 K-linearizability, or quasi linearizability is a correctness condition
 that reduces the synchronization required for concurrent data structures
 by relaxing the ordering. An execution is said to be k-linearizable
@@ -156,13 +157,16 @@ There are currently many linearizable implementations of various \emph{last-in-f
  \item use a load balancer to distribute operations between instances
 \end{itemize}
 
-This is effectively a simplified version of the approach taken by Kirsch et al. for their k-FIFO queue \cite{kfifo1}. Achieving k-linearizability in data-structures that impose restrictions on memory layout -- such as a vector, for example -- require modifying operations on it, as we will see in section \ref{sec:implementation}.
+This is effectively a simplified version of the approach taken by \citet{kfifo1} for their k-FIFO queue. Achieving k-linearizability in data-structures that impose restrictions on memory layout -- such as a vector, for example -- require modifying operations on it, as we will see in section \ref{sec:implementation}.
 
-Bjorne Strstroups's implementation of a lock free vector is used as
-base for most of the vector operations provided by our vector, including
-memory management and random access. Unlike it however, ours will
-not support the pop\_back operation, as some algorithms rely on the
-vector never shrinking.
+\subsection{Lock-free Vector}
+Since the contiguous memory data-structure we're using to show the effects of k-linearizability is a vector, we based off the lock-free vector implementation by \citet{dechev06}. However, the two key differences from it is that our \op{push\_back} operation will be k-linearizable, and we will not include a \op{pop\_back} operation.
+
+Our decision to not include a \op{pop\_back} operation is due to 2 key reasons
+\begin{enumerate}
+  \item Implementing a high throughput concurrent \op{push\_back} and \op{pop\_back} combination and showing that their interactions are linearizable is an extremely non-trivial task.
+  \item Since our purpose is to demonstrate how $k$-linearizability can be used to improve performance, it is sufficient to implement one of them.
+\end{enumerate}
 
 
 \section{Algorithms}
@@ -171,7 +175,7 @@ vector never shrinking.
 \subsection{Layout}
 A traditional vector consists of a single block of dynamically allocated memory, containing all elements in memory, where an index is an offset from the start of the block. This grows with each insertion, until all indices are filled. Once the block is completely filled, a new block is allocated (usually of twice the size) and all existing elements are copied to the new one. Since all values are stored continuously in a single block of memory, this usually provides good cache locality and random access is very efficient, as it requires a single add and dereference. The drawback of this approach is that the growth operation is very expensive, and could cause a significant performance impact if done too frequently.
 
-This model however, is insufficient for highly concurrent vectors, as parallelising this growth operation is a highly non trivial task. We avoid this problem by instead using a 2 level array, like [Dechev et al '05] and [TBB concurrent vector]. As such, our vector consists of a block of pointers, each pointing to blocks of doubling size, containing the values. This allows us to grow the vector by allocating and adding new blocks in a lock free manner, while keeping most of the advantages of contiguous storage, like efficient random access, good cache locality.
+This model however, is insufficient for highly concurrent vectors, as parallelising this growth operation is a highly non trivial task. We avoid this problem by instead using a 2 level array, like \citet{dechev06} and [TBB concurrent vector]. As such, our vector consists of a block of pointers, each pointing to blocks of doubling size, containing the values. This allows us to grow the vector by allocating and adding new blocks in a lock free manner, while keeping most of the advantages of contiguous storage, like efficient random access, good cache locality.
 
 However, it has some limitations \cite{dechev06}.
 % limitation - requires two lookups (and some bit shifts) per random access
@@ -435,7 +439,7 @@ Acknowledgments, if needed.
 % We recommend abbrvnat bibliography style.
 
 \bibliographystyle{abbrvnat}
-\bibliography{report.bib}
+\bibliography{report}
 
 % % The bibliography should be embedded for final submission.
 %
