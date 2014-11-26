@@ -384,41 +384,53 @@ The \emph{push\_back} can only be live-locked when it there are no sentinel valu
 
 \subsection{K-linearizability}
 
+We present a proof that the \op{push\_back} operation is $k$-linearizable. Following [[LASATH'S SUPERVISOR REF HERE]], we use linearization points to reason about the translation of a concurrent history to a sequential one.
+
+In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy vector semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
+
+Important facts:
+
+1) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$.
+
+2) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$.
+
+From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history.
+
 \subsubsection{K-Sequential Specification}
 
-- what is sequential specification
-\
-H is a hitory of Object
-\
-S is a legal histroy of Object, D is the distance
-$$ KSS = \left\{ H \middle\vert \exists S : D\left(H, S\right) \le k \right\} $$
-
-For our purposes, k-linearizability means that push\_back operation
-
-In order for \emph{push\_back} to be k-linearizabile, it is sufficient to show that all elements are inserted at most k indicies away from an equivalent linearizabile push\_back at it's linearization point.
-
-The reset of the operations are strictly linearizabile, and as such $<$INSERT NORMAL PROOF HERE$>$.
-
-%% While somewhat sketchy, this lays out our original logic, with some placeholders
-After n pushes, $r(i) = \emptyset$. After $n+m$ pushes, $r(i) = x_j, j \in [n, n+m-1]$. After rearranging, $x_j$ is the $i$'th thing added, and before $x_j$ is added, $r(i)=\emptyset$ and after $x_j$ is added $r(i)=x_j$.
-
-%% more concrete reasoning
-Consider index $i$. After reading $i-k+1$ element, $r(i) = \emptyset$. After performing $i + k$ \op{push\_back} operations, $r(i) \ne \emptyset$, and so $r(i)$ is one of the $2k-1$ elements added. Say that $r(i)=x_j$.
-
-In the sequential history, reorder $x_j$ so that it is the $i$th element added. Since $x_j$ is the between the $i-k+1$ and $i+k$ elements, we must move $x_j$ at most $2k-1$ positions. After re-arrangement, $r(i) = \emptyset$ before $p(x_j)$ , and $r(i) = x_j$ after and so it is a valid sequential vector history. This implies $VDist \le 2k-1$.
-
-%% To find the highest index that's guaranteed to be empty after n pushes
-Use one element to end the k-region. Then we have a gap of $k-1$ elements. And then we use the remaining $n-1$ elements, which fill indicies $[0, n-1)$. Then we have $k-1$ gaps, so we `fill in` indicies $[0, n+k-2)$ and so once we include the last element, that is $[0, n-1+(k-1)+1)$. So the index of the first guaranteed empty has index $n+k-2$.
-
-%% To find the last element we can guarantee is full
-When adding n elements,
-use $k-1$ elements to 'fill' the k-region.
-The we have a gap of $1$.
-So we have $n-k+1$ elements left.
-So those fill indicies $[0, n-k+1)$.
-Therefore, $n-k$ is the last index guaranteed to contain a value.
-
-Then work backwards. Once you have a constraint on what you want full/empty and solve for the values.
+% - what is sequential specification
+% \
+% H is a hitory of Object
+% \
+% S is a legal histroy of Object, D is the distance
+% $$ KSS = \left\{ H \middle\vert \exists S : D\left(H, S\right) \le k \right\} $$
+% 
+% For our purposes, k-linearizability means that push\_back operation
+% 
+% In order for \emph{push\_back} to be k-linearizabile, it is sufficient to show that all elements are inserted at most k indicies away from an equivalent linearizabile push\_back at it's linearization point.
+% 
+% The reset of the operations are strictly linearizabile, and as such $<$INSERT NORMAL PROOF HERE$>$.
+% 
+% %% While somewhat sketchy, this lays out our original logic, with some placeholders
+% After n pushes, $r(i) = \emptyset$. After $n+m$ pushes, $r(i) = x_j, j \in [n, n+m-1]$. After rearranging, $x_j$ is the $i$'th thing added, and before $x_j$ is added, $r(i)=\emptyset$ and after $x_j$ is added $r(i)=x_j$.
+% 
+% %% more concrete reasoning
+% Consider index $i$. After reading $i-k+1$ element, $r(i) = \emptyset$. After performing $i + k$ \op{push\_back} operations, $r(i) \ne \emptyset$, and so $r(i)$ is one of the $2k-1$ elements added. Say that $r(i)=x_j$.
+% 
+% In the sequential history, reorder $x_j$ so that it is the $i$th element added. Since $x_j$ is the between the $i-k+1$ and $i+k$ elements, we must move $x_j$ at most $2k-1$ positions. After re-arrangement, $r(i) = \emptyset$ before $p(x_j)$ , and $r(i) = x_j$ after and so it is a valid sequential vector history. This implies $VDist \le 2k-1$.
+% 
+% %% To find the highest index that's guaranteed to be empty after n pushes
+% Use one element to end the k-region. Then we have a gap of $k-1$ elements. And then we use the remaining $n-1$ elements, which fill indicies $[0, n-1)$. Then we have $k-1$ gaps, so we `fill in` indicies $[0, n+k-2)$ and so once we include the last element, that is $[0, n-1+(k-1)+1)$. So the index of the first guaranteed empty has index $n+k-2$.
+% 
+% %% To find the last element we can guarantee is full
+% When adding n elements,
+% use $k-1$ elements to 'fill' the k-region.
+% The we have a gap of $1$.
+% So we have $n-k+1$ elements left.
+% So those fill indicies $[0, n-k+1)$.
+% Therefore, $n-k$ is the last index guaranteed to contain a value.
+% 
+% Then work backwards. Once you have a constraint on what you want full/empty and solve for the values.
 
 \section{Experimental Evaluation}
 
