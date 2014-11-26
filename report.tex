@@ -379,7 +379,7 @@ The \emph{push\_back} can only be live-locked when it there are no sentinel valu
 
 \subsection{K-linearizability}
 
-We present a proof that the \op{push\_back} operation is $k$-linearizable. Following [[LASATH'S SUPERVISOR REF HERE]], we use linearization points to reason about the translation of a concurrent history to a sequential one.
+We present a proof that the \op{push\_back} operation is $k$-linearizable. Following \citet{dechev06}, we use linearization points to reason about the translation of a concurrent history to a sequential one.
 
 In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy vector semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
 
