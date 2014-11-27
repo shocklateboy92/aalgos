@@ -98,7 +98,7 @@ keyword1, keyword2
 
 \section{Introduction}
 
-Amdhal's law states that the maximum speedup of a concurrent algorithm is bounded by the portion of it that cannot be parallelized. Thus, intuitively, it follows that increasing parallelism is crucial to achieving maximum performance as the number of cores available on a computer increases. Increasing parallelism on shared data structures while maintaining correctness (linearizability) has thus far proven to be a highly non-trivial task.
+Amdhal's law states that the maximum speedup of a concurrent algorithm is bounded by the portion of it that cannot be parallelized. Intuitively, it follows that increasing parallelism is crucial to achieving maximum performance as the number of cores available on a computer increases. Increasing parallelism on shared data structures while maintaining correctness (linearizability) has thus far proven to be a highly non-trivial task.
 
 Fortunately, it turns out that strict linearizability isn't actually necessary for many applications. Consider for example, a web server that keeps incoming requests in a queue so that it's worker threads can service them later. In this situation, the queue is only used to avoid starvation, and thus does not actually need to be strict FIFO: even if some operations return in a different order (by a bounded amont), fariness can still be ensured. This deviation from linearizability by reordering up to some constant $k$ sequential operations is called k-linearizability.
 
