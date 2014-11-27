@@ -82,7 +82,7 @@ its effectiveness by relaxing the \op{push\_back} operation to write
 to one of k-spots from the tail. We show how an algorithm can
 be derived using prime number theory for all threads to search the
 entire k-region in a unique order. Finally, we benchmark this
-(feature-equivalent) vector against the vector from intel's
+(feature-equivalent) vector against the vector from Intel's
 industry leading thread building blocks library and show it is significantly more scalable.
 \end{abstract}
 
@@ -98,12 +98,14 @@ keyword1, keyword2
 
 \section{Introduction}
 
-Amdhal's law states that the maximum speedup of a concurrent algorithm is bounded by the portion of it that cannot be parallelized. Thus, intuitively, it follows that increasing parallelism is crucial to achieving maximum performance as the number of cores available on a computer increases. Increasing parallelism on shared data structures while maintaining correctness (linearizability) has thus far proven to be a highly non-trivial task.
+Amdhal's law states that the maximum speedup of a concurrent algorithm is bounded by the portion of it that cannot be parallelized. Intuitively, it follows that increasing parallelism is crucial to achieving maximum performance as the number of cores available on a computer increases. Increasing parallelism on shared data structures while maintaining correctness (linearizability) has thus far proven to be a highly non-trivial task.
 
-Fortunately, it turns out that strict linearizability isn't actually necessary for many applications. Consider for example, a web server that keeps incoming requests in a queue so that it's worker threads can service them later. In this situation, the queue is only used to avoid starvation, and thus does not actually need to be strict FIFO: even if some operations return in a different order (by a bounded amont), fariness can still be ensured. This deviation from linearizability by reordering up to some constant $k$ sequential operations is called k-linearizability.
+Fortunately, it turns out that strict linearizability isn't actually necessary for many applications. Consider for example, a web server that keeps incoming requests in a queue so that it's worker threads can service them later. In this situation, the queue is only used to avoid starvation, and thus does not actually need to be strict FIFO: even if some operations return in a different order (by a bounded amont), fariness can still be ensured. This deviation from linearizability by reordering sequential operations by up to some constant $k$ is called $k$-linearizability.
 
-K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning these data structures to thier k-linearizable equivalents has been straightforward: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This approach has a drawback that it cannot be used for data structures whose semantics dictate that its elements be located in a contiguous block of memory, such as a vector.
+K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning these data structures to their k-linearizable equivalents has been straightforward: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This approach has a drawback in that it cannot be used for data structures whose semantics dictate that its elements be located in a contiguous block of memory, such as a vector.
 
+% TODO
+% this section needs more background and a re-ordering
 Here we present a concurrent vector that is lock-free with a scalable, high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly $k$ elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector for performance reasons, as explained in section \autoref{sec:popback}.
 
 
@@ -313,6 +315,7 @@ Since the stored data elements can only be as large as a word, both read and wri
     \STATE thread.previous\_offset = offset
     \IF{offset \eq 0}
       \STATE advance\_tail()
+      \STATE tail \as vector.tail
     \ENDIF
   \ENDWHILE
 
@@ -384,41 +387,57 @@ The \emph{push\_back} can only be live-locked when it there are no sentinel valu
 
 \subsection{K-linearizability}
 
+We present a sketch of a proof that the \op{push\_back} operation is $k$-linearizable. Following \citet{dechev06} and \citet{opodis10}, we use linearization points to reason about the translation of a concurrent history to a sequential one. The intuition behind doing so is that for each invocation-response event pair, there is a point in-between the two where the action of the operation is atomically visible (usually near a call to a CAS operation). By choosing such a point between the two events, we can convert any argument about the linearization of a concurrent history into an argument about whether a semantically valid sequence of linearization points can be constructed from the given concurrent history.
+
+In order for our linearization to be $k$-linearizable with respect to \op{push\_back}, we need to find a permutation of the linearization points of \op{push\_back} such that the permutation satisfies the semantics of a vector, and such that any given linearization point changes its position in the history by at most $k$. In order to satisfy the appropriate semantics, the $i$th linearization of \op{push\_back} should insert into vector index $i$.
+
+We proceed as follows:
+
+1) Immediately after the linearization of a \op{push\_back} operation, if the value of \op{vector.tail} is $t$, then the operation will insert into an index $i$ with $t \le i \le t + k$. 
+
+\textit{Sketch proof:} the value of \op{vector.tail} is only modified by \op{advance\_tail}, which does not decrease it. Therefore, the value of \op{vector.tail} on the last line of algorithm 1 will be no more than $t$. In addition, the offset used in the CAS operation in \op{push\_back} is between 0 and $k$. This means that if the CAS succeeds and the algorithm terminates, it will insert at an index below $t + k$, which gives the upper bound. To get the lower bound, we know from \op{advance\_tail} that all indices below $t$ have a value other than \op{sentinel\_value}, and so if the CAS succeeds, it inserts above $t$. Thus we have the required bounds.
+
+2) Immediately after the $p$th linearization of a \op{push\_back} operation, the value of \op{vector.tail} is between $p-k$ and $p$. 
+
+\textit{Sketch proof:} Let \op{vector.tail} equal $t$. Clearly, since $t$ counts the number of consecutive non-sentinel values from the start of the vector, then after the $p$th insertion linearizes, it cannot be above $p$, which gives the upper bound. For the lower bound, consider that from (1) above we have that the $p$th insertion inserts into an index between $t$ and $t + k$. Since $t$ is non-decreasing, so is this insertion-index-range. This implies that the first $t + k$ indices contain all $p$ inserted elements. By the pidgeon-hole principle, we have that $t + k \ge p$; some simple algebra gives the required bound. 
+
+From 1 and 2, we have that the $p$th linearized \op{push\_back} will insert into an index $i$ with $p - k \le i \le p + k$. Since the semantics of a vector require the $n$th \op{push\_back} to push into index $n$ for all $n$, we clearly only need to shift the $p$th call at most $k$ calls forward or back in the history for $p$ to match $i$, and so our implementation is $k$-linearizable.
+
 \subsubsection{K-Sequential Specification}
 
-- what is sequential specification
-\
-H is a hitory of Object
-\
-S is a legal histroy of Object, D is the distance
-$$ KSS = \left\{ H \middle\vert \exists S : D\left(H, S\right) \le k \right\} $$
-
-For our purposes, k-linearizability means that push\_back operation
-
-In order for \emph{push\_back} to be k-linearizabile, it is sufficient to show that all elements are inserted at most k indicies away from an equivalent linearizabile push\_back at it's linearization point.
-
-The reset of the operations are strictly linearizabile, and as such $<$INSERT NORMAL PROOF HERE$>$.
-
-%% While somewhat sketchy, this lays out our original logic, with some placeholders
-After n pushes, $r(i) = \emptyset$. After $n+m$ pushes, $r(i) = x_j, j \in [n, n+m-1]$. After rearranging, $x_j$ is the $i$'th thing added, and before $x_j$ is added, $r(i)=\emptyset$ and after $x_j$ is added $r(i)=x_j$.
-
-%% more concrete reasoning
-Consider index $i$. After reading $i-k+1$ element, $r(i) = \emptyset$. After performing $i + k$ \op{push\_back} operations, $r(i) \ne \emptyset$, and so $r(i)$ is one of the $2k-1$ elements added. Say that $r(i)=x_j$.
-
-In the sequential history, reorder $x_j$ so that it is the $i$th element added. Since $x_j$ is the between the $i-k+1$ and $i+k$ elements, we must move $x_j$ at most $2k-1$ positions. After re-arrangement, $r(i) = \emptyset$ before $p(x_j)$ , and $r(i) = x_j$ after and so it is a valid sequential vector history. This implies $VDist \le 2k-1$.
-
-%% To find the highest index that's guaranteed to be empty after n pushes
-Use one element to end the k-region. Then we have a gap of $k-1$ elements. And then we use the remaining $n-1$ elements, which fill indicies $[0, n-1)$. Then we have $k-1$ gaps, so we `fill in` indicies $[0, n+k-2)$ and so once we include the last element, that is $[0, n-1+(k-1)+1)$. So the index of the first guaranteed empty has index $n+k-2$.
-
-%% To find the last element we can guarantee is full
-When adding n elements,
-use $k-1$ elements to 'fill' the k-region.
-The we have a gap of $1$.
-So we have $n-k+1$ elements left.
-So those fill indicies $[0, n-k+1)$.
-Therefore, $n-k$ is the last index guaranteed to contain a value.
-
-Then work backwards. Once you have a constraint on what you want full/empty and solve for the values.
+% - what is sequential specification
+% \
+% H is a hitory of Object
+% \
+% S is a legal histroy of Object, D is the distance
+% $$ KSS = \left\{ H \middle\vert \exists S : D\left(H, S\right) \le k \right\} $$
+% 
+% For our purposes, k-linearizability means that push\_back operation
+% 
+% In order for \emph{push\_back} to be k-linearizabile, it is sufficient to show that all elements are inserted at most k indicies away from an equivalent linearizabile push\_back at it's linearization point.
+% 
+% The reset of the operations are strictly linearizabile, and as such $<$INSERT NORMAL PROOF HERE$>$.
+% 
+% %% While somewhat sketchy, this lays out our original logic, with some placeholders
+% After n pushes, $r(i) = \emptyset$. After $n+m$ pushes, $r(i) = x_j, j \in [n, n+m-1]$. After rearranging, $x_j$ is the $i$'th thing added, and before $x_j$ is added, $r(i)=\emptyset$ and after $x_j$ is added $r(i)=x_j$.
+% 
+% %% more concrete reasoning
+% Consider index $i$. After reading $i-k+1$ element, $r(i) = \emptyset$. After performing $i + k$ \op{push\_back} operations, $r(i) \ne \emptyset$, and so $r(i)$ is one of the $2k-1$ elements added. Say that $r(i)=x_j$.
+% 
+% In the sequential history, reorder $x_j$ so that it is the $i$th element added. Since $x_j$ is the between the $i-k+1$ and $i+k$ elements, we must move $x_j$ at most $2k-1$ positions. After re-arrangement, $r(i) = \emptyset$ before $p(x_j)$ , and $r(i) = x_j$ after and so it is a valid sequential vector history. This implies $VDist \le 2k-1$.
+% 
+% %% To find the highest index that's guaranteed to be empty after n pushes
+% Use one element to end the k-region. Then we have a gap of $k-1$ elements. And then we use the remaining $n-1$ elements, which fill indicies $[0, n-1)$. Then we have $k-1$ gaps, so we `fill in` indicies $[0, n+k-2)$ and so once we include the last element, that is $[0, n-1+(k-1)+1)$. So the index of the first guaranteed empty has index $n+k-2$.
+% 
+% %% To find the last element we can guarantee is full
+% When adding n elements,
+% use $k-1$ elements to 'fill' the k-region.
+% The we have a gap of $1$.
+% So we have $n-k+1$ elements left.
+% So those fill indicies $[0, n-k+1)$.
+% Therefore, $n-k$ is the last index guaranteed to contain a value.
+% 
+% Then work backwards. Once you have a constraint on what you want full/empty and solve for the values.
 
 \section{Experimental Evaluation}
 
