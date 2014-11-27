@@ -304,7 +304,7 @@ Since the stored data elements can only be as large as a word, both read and wri
 
 \begin{algorithm}
 \caption{push\_back $thread, vector, element$}
-\begin{algorithmic}
+\begin{algorithmic}[1]
 \STATE tail \as vector.tail
 \REPEAT
   \STATE offset \as thread.previous\_offset
@@ -317,7 +317,7 @@ Since the stored data elements can only be as large as a word, both read and wri
     \ENDIF
   \ENDWHILE
 
-  reserve(tail + offset)
+  \STATE reserve(tail + offset)
 \UNTIL CAS(at(tail + offset), sentinel\_value, element)
 \end{algorithmic}
 \label{alg:pushback}
