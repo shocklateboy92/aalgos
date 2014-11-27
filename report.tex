@@ -104,6 +104,7 @@ Fortunately, it turns out that strict linearizability isn't actually necessary f
 
 K-linearizability has already been used to increase the throughput and scalability of FIFO queues by turning them into k-FIFO queues[2]; LIFO stacks to k-LIFO stacks, and so on. The process for turning these data structures to their k-linearizable equivalents has been straightforward: instantiate multiple copies of a linearizable implementation and distribute operations between individual instances with the use of a load balancer[4]. This approach has a drawback in that it cannot be used for data structures whose semantics dictate that its elements be located in a contiguous block of memory, such as a vector.
 
+% TODO
 % this section needs more background and a re-ordering
 Here we present a concurrent vector that is lock-free with a scalable, high throughput push\_back operation. This is the only k-linearizabile operation in the vector and it inserts an element anywhere within the bounds of the \emph{k-region}. The k-region begins at the \emph{hard-tail} (before which all elements are guaranteed to be contiguous), and is exactly $k$ elements long. It also supports random access (read, write), reserve and size operations. Note that it does not support pop\_back even though it is considered standard for a vector for performance reasons, as explained in section \autoref{sec:popback}.
 
